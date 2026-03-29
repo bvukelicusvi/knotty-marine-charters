@@ -595,7 +595,6 @@ export default function KnottyMarineSite() {
                 Military, veterans & locals receive 10% off all bookings.
               </p>
             </div>
-            </p>
           </FadeIn>
         </div>
       </section>
