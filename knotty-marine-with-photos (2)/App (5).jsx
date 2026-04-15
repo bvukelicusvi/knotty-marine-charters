@@ -277,7 +277,7 @@ function Hero() {
             <a href="#charters" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "15px", fontWeight: 500, color: C.cream, background: "transparent", padding: "14px 32px", borderRadius: "8px", textDecoration: "none", letterSpacing: "0.5px", border: `1.5px solid ${C.cream}30` }}>
               View Charters
             </a>
-            <a href="tel:+15712327040" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "15px", fontWeight: 500, color: C.cream, background: "transparent", padding: "14px 32px", borderRadius: "8px", textDecoration: "none", letterSpacing: "0.5px", border: `1.5px solid ${C.rust}70`, color: C.cream }}>
+            <a href="tel:+15712327040" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "15px", fontWeight: 500, color: C.cream, background: "transparent", padding: "14px 32px", borderRadius: "8px", textDecoration: "none", letterSpacing: "0.5px", border: `1.5px solid ${C.rust}70` }}>
               Call / Text Us
             </a>
           </div>
@@ -1148,3 +1148,4 @@ export default function KnottyMarineSite() {
     </div>
   );
 }
+
