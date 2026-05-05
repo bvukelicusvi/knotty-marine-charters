@@ -1,0 +1,1183 @@
+import { useState, useEffect, useRef } from "react";
+import boatSide from './boat-side.jpg';
+import boatSunset from './boat-sunset.jpg';
+import boatAction from './boat-action.jpg';
+import familyPhoto from './family.jpg';
+import lunaPhoto from './luna.jpg';
+
+/* ─── Brand Tokens ─── */
+const C = {
+  navy: "#0b1d33",
+  deepNavy: "#061222",
+  midNavy: "#152d4a",
+  gold: "#c8a55a",
+  lightGold: "#e2cc8a",
+  cream: "#f5f0e4",
+  warmWhite: "#faf7f0",
+  rust: "#b54a32",
+  sea: "#2a8a9a",
+  sand: "#d4c9b0",
+  rope: "#c4a86a",
+};
+
+/* ─── Scroll Animation Hook ─── */
+function useInView(threshold = 0.15) {
+  const ref = useRef(null);
+  const [visible, setVisible] = useState(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([e]) => { if (e.isIntersecting) { setVisible(true); obs.unobserve(el); } },
+      { threshold }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, [threshold]);
+  return [ref, visible];
+}
+
+function FadeIn({ children, delay = 0, style = {} }) {
+  const [ref, visible] = useInView(0.1);
+  return (
+    <div
+      ref={ref}
+      style={{
+        opacity: visible ? 1 : 0,
+        transform: visible ? "translateY(0)" : "translateY(32px)",
+        transition: `opacity 0.7s ease ${delay}s, transform 0.7s ease ${delay}s`,
+        ...style,
+      }}
+    >
+      {children}
+    </div>
+  );
+}
+
+/* ─── SVG Components ─── */
+
+function KnotIcon({ size = 40, color = C.gold, strokeW = 2.5 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 60 80" fill="none">
+      <g stroke={color} strokeWidth={strokeW} fill="none" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M30 2 L30 18 C30 24,20 28,15 28 C9 28,5 24,5 18 C5 12,11 7,16 10 C21 13,26 18,24 24 C22 30,16 33,11 31" />
+        <path d="M30 18 L30 45 C30 52,36 57,43 57 C50 57,55 52,55 45 C55 38,48 33,42 35 C36 37,32 42,30 48" />
+        <path d="M30 48 L30 78" />
+      </g>
+    </svg>
+  );
+}
+
+function WavesDivider({ color = C.navy, flip = false }) {
+  return (
+    <div style={{ lineHeight: 0, transform: flip ? "scaleY(-1)" : "none", marginTop: flip ? 0 : "-1px", marginBottom: flip ? "-1px" : 0 }}>
+      <svg viewBox="0 0 1440 60" fill="none" style={{ width: "100%", display: "block" }}>
+        <path d="M0 30 C240 0, 480 60, 720 30 C960 0, 1200 60, 1440 30 L1440 60 L0 60 Z" fill={color} />
+      </svg>
+    </div>
+  );
+}
+
+function AnchorLogo({ size = 48 }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 48 48" fill="none" strokeLinecap="round" strokeLinejoin="round">
+      <circle cx="24" cy="10" r="5" stroke={C.gold} strokeWidth="2" fill="none" />
+      <line x1="24" y1="15" x2="24" y2="42" stroke={C.gold} strokeWidth="2" />
+      <path d="M10 34 L24 46 L38 34" stroke={C.gold} strokeWidth="2" fill="none" />
+      <line x1="16" y1="10" x2="32" y2="10" stroke={C.gold} strokeWidth="2" />
+    </svg>
+  );
+}
+
+function StarSeparator() {
+  return (
+    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "16px", margin: "16px 0" }}>
+      <div style={{ width: "60px", height: "1px", background: `${C.gold}40` }} />
+      <svg width="12" height="12" viewBox="0 0 12 12" fill={C.gold}>
+        <polygon points="6,0 7.5,4 12,4.5 8.5,7.5 9.5,12 6,9.5 2.5,12 3.5,7.5 0,4.5 4.5,4" />
+      </svg>
+      <div style={{ width: "60px", height: "1px", background: `${C.gold}40` }} />
+    </div>
+  );
+}
+
+/* ─── Nav ─── */
+
+function Nav({ scrolled }) {
+  const links = ["Charters", "About", "The Boat", "Veterans", "Book Now"];
+  return (
+    <nav style={{
+      position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
+      padding: scrolled ? "10px 32px" : "18px 32px",
+      background: scrolled ? `${C.deepNavy}f0` : "transparent",
+      backdropFilter: scrolled ? "blur(16px)" : "none",
+      borderBottom: scrolled ? `1px solid ${C.gold}20` : "1px solid transparent",
+      transition: "all 0.4s ease",
+      display: "flex", alignItems: "center", justifyContent: "space-between",
+    }}>
+      <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+        <AnchorLogo size={scrolled ? 28 : 34} />
+        <div>
+          <span style={{
+            fontFamily: "'Playfair Display', serif", fontSize: scrolled ? "16px" : "19px",
+            fontWeight: 700, color: C.cream, letterSpacing: "-0.02em",
+            transition: "font-size 0.4s ease",
+          }}>
+            Knotty Marine
+          </span>
+          <span style={{
+            fontFamily: "'Oswald', sans-serif", fontSize: "9px", letterSpacing: "4px",
+            color: C.gold, display: "block", marginTop: "-2px", fontWeight: 300,
+          }}>
+            CHARTERS
+          </span>
+        </div>
+      </div>
+      <div style={{ display: "flex", gap: "28px", alignItems: "center" }}>
+        {links.map((l, i) => (
+          <a
+            key={l}
+            href={l === "Book Now" ? FH_ALL : `#${l.toLowerCase().replace(/ /g, "-")}`}
+            style={{
+              fontFamily: "'DM Sans', sans-serif", fontSize: "13px", fontWeight: 500,
+              color: l === "Book Now" ? C.navy : C.sand,
+              textDecoration: "none", letterSpacing: "0.5px",
+              padding: l === "Book Now" ? "8px 20px" : "0",
+              background: l === "Book Now" ? C.gold : "transparent",
+              borderRadius: l === "Book Now" ? "6px" : "0",
+              transition: "color 0.2s, opacity 0.2s",
+            }}
+          >
+            {l}
+          </a>
+        ))}
+      </div>
+    </nav>
+  );
+}
+
+/* ─── Hero ─── */
+
+function Hero() {
+  return (
+    <section style={{
+      minHeight: "100vh", display: "flex", alignItems: "center", justifyContent: "center",
+      background: `
+        radial-gradient(ellipse at 30% 20%, ${C.midNavy}80 0%, transparent 50%),
+        radial-gradient(ellipse at 70% 80%, ${C.sea}15 0%, transparent 40%),
+        linear-gradient(175deg, ${C.deepNavy} 0%, ${C.navy} 45%, ${C.midNavy} 100%)
+      `,
+      position: "relative", overflow: "hidden", textAlign: "center",
+      padding: "120px 24px 80px",
+    }}>
+      {/* Animated wave layers */}
+      <div style={{
+        position: "absolute", bottom: 0, left: 0, right: 0, height: "120px",
+        background: `
+          repeating-linear-gradient(90deg,
+            transparent 0px, transparent 80px,
+            ${C.gold}04 80px, ${C.gold}04 82px
+          )
+        `,
+        opacity: 0.5,
+      }} />
+      <div style={{
+        position: "absolute", bottom: "-4px", left: 0, right: 0,
+      }}>
+        <svg viewBox="0 0 1440 100" fill="none" style={{ width: "100%", display: "block" }}>
+          <path d="M0 50 C180 20, 360 80, 540 50 C720 20, 900 80, 1080 50 C1260 20, 1440 80, 1440 50 L1440 100 L0 100 Z" fill={C.cream} opacity="0.06" />
+          <path d="M0 65 C200 35, 400 85, 600 60 C800 35, 1000 85, 1200 60 C1350 40, 1440 70, 1440 60 L1440 100 L0 100 Z" fill={C.cream} opacity="0.04" />
+        </svg>
+      </div>
+
+      {/* Rope border top */}
+      <div style={{
+        position: "absolute", top: 0, left: 0, right: 0, height: "4px",
+        background: `repeating-linear-gradient(90deg, ${C.gold} 0px, ${C.gold} 14px, transparent 14px, transparent 22px)`,
+        opacity: 0.4,
+      }} />
+
+      {/* Compass rose watermark */}
+      <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", opacity: 0.02 }}>
+        <svg width="700" height="700" viewBox="0 0 200 200" fill="none">
+          <circle cx="100" cy="100" r="95" stroke={C.gold} strokeWidth="0.5" />
+          <circle cx="100" cy="100" r="80" stroke={C.gold} strokeWidth="0.3" />
+          {[0, 45, 90, 135, 180, 225, 270, 315].map(a => (
+            <line key={a} x1={100 + Math.cos(a * Math.PI / 180) * 30} y1={100 + Math.sin(a * Math.PI / 180) * 30}
+              x2={100 + Math.cos(a * Math.PI / 180) * 95} y2={100 + Math.sin(a * Math.PI / 180) * 95}
+              stroke={C.gold} strokeWidth={a % 90 === 0 ? "1" : "0.3"} />
+          ))}
+          <polygon points="100,10 106,90 100,85 94,90" fill={C.gold} />
+        </svg>
+      </div>
+
+      <div style={{ position: "relative", zIndex: 1, maxWidth: "800px" }}>
+        <FadeIn>
+          <div style={{ marginBottom: "24px" }}>
+            <KnotIcon size={50} color={C.gold} strokeW={2} />
+          </div>
+        </FadeIn>
+
+        <FadeIn delay={0.15}>
+          <p style={{
+            fontFamily: "'Oswald', sans-serif", fontSize: "13px", letterSpacing: "7px",
+            color: C.gold, marginBottom: "16px", fontWeight: 400,
+          }}>
+            U.S. VIRGIN ISLANDS
+          </p>
+        </FadeIn>
+
+        <FadeIn delay={0.3}>
+          <h1 style={{
+            fontFamily: "'Playfair Display', serif",
+            fontSize: "clamp(48px, 9vw, 96px)", fontWeight: 800,
+            color: C.cream, margin: "0 0 8px", letterSpacing: "-0.04em", lineHeight: 0.95,
+          }}>
+            Knotty Marine
+          </h1>
+        </FadeIn>
+
+        <FadeIn delay={0.45}>
+          <p style={{
+            fontFamily: "'Oswald', sans-serif", fontSize: "clamp(16px, 3vw, 22px)",
+            letterSpacing: "10px", color: C.gold, margin: "0 0 32px", fontWeight: 300,
+          }}>
+            CHARTERS
+          </p>
+        </FadeIn>
+
+        <FadeIn delay={0.6}>
+          <p style={{
+            fontFamily: "'Playfair Display', serif", fontStyle: "italic",
+            fontSize: "clamp(18px, 3vw, 26px)", color: C.sand, margin: "0 0 40px",
+            opacity: 0.75, lineHeight: 1.4,
+          }}>
+            "Sun, Fun, Saltwater Memories"
+          </p>
+        </FadeIn>
+
+        <FadeIn delay={0.75}>
+          <div style={{ display: "flex", gap: "16px", justifyContent: "center", flexWrap: "wrap" }}>
+            <a href={FH_ALL} style={{
+              fontFamily: "'DM Sans', sans-serif", fontSize: "15px", fontWeight: 600,
+              color: C.navy, background: C.gold, padding: "14px 36px", borderRadius: "8px",
+              textDecoration: "none", letterSpacing: "0.5px",
+              boxShadow: `0 4px 24px ${C.gold}30`,
+              transition: "transform 0.2s, box-shadow 0.2s",
+            }}>
+              Book Your Charter
+            </a>
+            <a href="#charters" style={{
+              fontFamily: "'DM Sans', sans-serif", fontSize: "15px", fontWeight: 500,
+              color: C.cream, background: "transparent", padding: "14px 36px", borderRadius: "8px",
+              textDecoration: "none", letterSpacing: "0.5px",
+              border: `1.5px solid ${C.cream}30`,
+              transition: "border-color 0.2s",
+            }}>
+              View Charters
+            </a>
+          </div>
+        </FadeIn>
+
+        <FadeIn delay={0.9}>
+          <div style={{
+            display: "inline-flex", alignItems: "center", gap: "12px",
+            padding: "10px 24px", borderRadius: "30px", marginTop: "48px",
+            border: `1px solid ${C.gold}20`, background: `${C.gold}06`,
+          }}>
+            <span style={{ fontSize: "11px", color: C.rust, letterSpacing: "2px", fontWeight: 700, fontFamily: "'Oswald', sans-serif" }}>
+              ★ SERVICE DISABLED VETERAN OWNED
+            </span>
+            <span style={{ color: C.gold, fontSize: "6px" }}>◆</span>
+            <span style={{ fontSize: "11px", color: C.sand, letterSpacing: "2px", fontWeight: 400, fontFamily: "'Oswald', sans-serif" }}>
+              USMC RETIRED • 26 YEARS
+            </span>
+          </div>
+        </FadeIn>
+      </div>
+    </section>
+  );
+}
+
+/* ─── Charter Cards ─── */
+
+const FH = "https://fareharbor.com/embeds/book/knottymarinecharters";
+const FH_ALL = `${FH}/?full-items=yes&flow=1621449`;
+
+const charters = [
+  {
+    title: "Half-Day Adventure",
+    hours: "4 Hours",
+    price: "From $700",
+    desc: "Perfect for a morning snorkel or afternoon cruise. Swim with sea turtles at Buck Island, beach hop to Water Island, or explore hidden coves around St. Thomas.",
+    features: ["Snorkel gear provided", "Cooler with drinks & ice", "Bluetooth sound system", "Up to 10 guests", "No passport required"],
+    icon: "☀️",
+    popular: false,
+    bookUrl: `${FH}/items/725490/?full-items=yes&flow=1621449`,
+  },
+  {
+    title: "Full-Day Expedition",
+    hours: "7-8 Hours",
+    price: "From $1,300",
+    desc: "The ultimate island-hopping experience. Circle St. John's north shore, snorkel world-class reefs, stop at legendary beach bars, and anchor for lunch at Pizza Pi or Lime Out.",
+    features: ["Everything in Half-Day", "Lunch stop included", "Multi-island route", "Up to 10 guests", "No passport required"],
+    icon: "🏝️",
+    popular: true,
+    bookUrl: `${FH}/items/725504/?full-items=yes&flow=1621449`,
+  },
+  {
+    title: "Sunset Cruise",
+    hours: "2.5 Hours",
+    price: "From $450",
+    desc: "Knotty by day, salty by night. Watch the Caribbean sun melt into the horizon with rum punch in hand aboard Luna's Wake. Perfect for proposals, anniversaries, and celebrations.",
+    features: ["Rum punch & cocktails", "Appetizer spread", "Prime sunset route", "Up to 10 guests"],
+    icon: "🌅",
+    popular: false,
+    bookUrl: `${FH}/items/725506/?full-items=yes&flow=1621449`,
+  },
+  {
+    title: "Bachelorette / Bachelor Party",
+    hours: "5 Hours",
+    price: "From $1,000",
+    desc: "Celebrate your last sail as a single — Knotty style. Beach bar crawl, snorkeling, music blasting on the Fusion sound system, and photo ops at the most scenic spots in the USVI.",
+    features: ["Party-ready sound system", "Cooler with drinks & ice", "Beach bar & snorkel stops", "Decorations welcome (bring your own)", "Up to 10 guests"],
+    icon: "🎉",
+    popular: false,
+    bookUrl: `${FH}/items/725508/?full-items=yes&flow=1621449`,
+  },
+  {
+    title: "Cruise Ship Express",
+    hours: "4 Hours",
+    price: "From $750",
+    desc: "Only in port for the day? Skip the crowds. We pick you up steps from your ship at Havensight and get you to the best snorkeling, beaches, and beach bars — all in 4 hours.",
+    features: ["Havensight pickup & dropoff", "Snorkel & beach stop", "Beach bar visit", "Up to 10 guests", "Back before your ship leaves"],
+    icon: "🚢",
+    popular: false,
+    bookUrl: `${FH}/items/725510/?full-items=yes&flow=1621449`,
+  },
+  {
+    title: "Circle St. John Foodie Tour",
+    hours: "7-8 Hours",
+    price: "From $1,500",
+    desc: "Eat and snorkel your way around St. John. Hit the famous floating Pizza Pi, Lime Out taco bar, Lovango Beach Club, plus world-class snorkeling at Trunk Bay and Maho Bay.",
+    features: ["Pizza Pi + Lime Out stops", "Lovango Beach Club", "Trunk Bay snorkeling", "Full circumnavigation of St. John", "Up to 10 guests"],
+    icon: "🍕",
+    popular: false,
+    bookUrl: `${FH}/items/725515/?full-items=yes&flow=1621449`,
+  },
+  {
+    title: "Circumnavigate St. John & St. Thomas",
+    hours: "Full Day",
+    price: "Contact for Pricing",
+    desc: "The ultimate USVI adventure — circumnavigate both islands in one epic day. Hit every highlight, secret cove, and beach bar across St. John and St. Thomas. This is the trip you'll never forget.",
+    features: ["Both islands in one day", "Multiple snorkel stops", "Beach bar & restaurant stops", "Up to 10 guests", "No passport required"],
+    icon: "🧭",
+    popular: false,
+    bookUrl: `${FH}/items/725518/?full-items=yes&flow=1621449`,
+  },
+  {
+    title: "Build Your Own Adventure",
+    hours: "Custom",
+    price: "Contact for Pricing",
+    desc: "Your trip, your rules. Tell us what you want — a specific island, a hidden beach, a sunset proposal spot, a fishing and snorkel combo — and we'll build the perfect charter just for you.",
+    features: ["Fully customizable itinerary", "You set the pace", "Captain's local knowledge", "Up to 10 guests", "Special occasions welcome"],
+    icon: "✨",
+    popular: false,
+    bookUrl: `${FH}/items/725522/?full-items=yes&flow=1621449`,
+  },
+];
+
+const studentTrip = {
+  title: "USVI Student Discovery Trip",
+  price: "$125 per student",
+  hours: "3-4 Hours",
+  desc: "Giving back to the community that gave us a home. Captain Brian brings the same discipline and dedication from 26 years of Marine Corps service to inspire the next generation. Educational snorkeling, marine life identification, island geography, and ocean safety.",
+  requirements: ["Must be a USVI school or youth organization", "Teacher/chaperone required", "Minimum 5 students", "Advance booking required"],
+  bookUrl: FH_ALL,
+};
+
+const shuttleService = {
+  title: "Private St. John Shuttle",
+  desc: "Need a ride to or from St. John? We offer private water shuttle service between St. Thomas and St. John. Skip the ferry lines and travel in style aboard Luna's Wake.",
+  note: "Contact us for shuttle pricing and availability.",
+  bookUrl: FH_ALL,
+};
+
+function CharterCard({ charter, index }) {
+  return (
+    <FadeIn delay={index * 0.15} style={{ flex: "1 1 280px", maxWidth: "360px" }}>
+      <div style={{
+        background: "#fff", borderRadius: "16px", overflow: "hidden",
+        border: charter.popular ? `2px solid ${C.gold}` : `1px solid ${C.sand}50`,
+        boxShadow: charter.popular ? `0 12px 40px ${C.gold}15` : "0 4px 20px rgba(0,0,0,0.04)",
+        position: "relative", height: "100%", display: "flex", flexDirection: "column",
+      }}>
+        {charter.popular && (
+          <div style={{
+            position: "absolute", top: "16px", right: "16px",
+            background: C.gold, color: C.navy, padding: "4px 12px", borderRadius: "20px",
+            fontFamily: "'Oswald', sans-serif", fontSize: "10px", letterSpacing: "2px", fontWeight: 600,
+          }}>
+            MOST POPULAR
+          </div>
+        )}
+        <div style={{
+          padding: "32px 28px 20px",
+          background: charter.popular
+            ? `linear-gradient(135deg, ${C.navy}, ${C.midNavy})`
+            : `linear-gradient(135deg, ${C.cream}80, ${C.warmWhite})`,
+        }}>
+          <span style={{ fontSize: "36px", display: "block", marginBottom: "12px" }}>{charter.icon}</span>
+          <h3 style={{
+            fontFamily: "'Playfair Display', serif", fontSize: "24px", fontWeight: 700,
+            color: charter.popular ? C.cream : C.navy, margin: "0 0 4px", letterSpacing: "-0.02em",
+          }}>
+            {charter.title}
+          </h3>
+          <div style={{ display: "flex", gap: "12px", alignItems: "baseline" }}>
+            <span style={{
+              fontFamily: "'Oswald', sans-serif", fontSize: "11px", letterSpacing: "3px",
+              color: charter.popular ? C.gold : C.rust, fontWeight: 500,
+            }}>
+              {charter.hours}
+            </span>
+            <span style={{
+              fontFamily: "'DM Sans', sans-serif", fontSize: "20px", fontWeight: 700,
+              color: charter.popular ? C.gold : C.navy,
+            }}>
+              {charter.price}
+            </span>
+          </div>
+        </div>
+        <div style={{ padding: "20px 28px 28px", flex: 1, display: "flex", flexDirection: "column" }}>
+          <p style={{
+            fontFamily: "'DM Sans', sans-serif", fontSize: "14px", lineHeight: 1.7,
+            color: "#6b655e", margin: "0 0 20px",
+          }}>
+            {charter.desc}
+          </p>
+          <div style={{ marginTop: "auto" }}>
+            {charter.features.map((f, i) => (
+              <div key={i} style={{
+                display: "flex", alignItems: "center", gap: "10px",
+                padding: "6px 0", borderTop: i === 0 ? `1px solid ${C.sand}30` : "none",
+              }}>
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+                  <circle cx="7" cy="7" r="6" stroke={C.sea} strokeWidth="1.5" />
+                  <path d="M4 7 L6 9 L10 5" stroke={C.sea} strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round" />
+                </svg>
+                <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: "#5a554e" }}>{f}</span>
+              </div>
+            ))}
+          </div>
+          <a href={charter.bookUrl} style={{
+            display: "block", textAlign: "center", marginTop: "20px",
+            padding: "12px", borderRadius: "8px",
+            background: charter.popular ? C.gold : C.navy,
+            color: charter.popular ? C.navy : C.cream,
+            border: "none",
+            fontFamily: "'DM Sans', sans-serif", fontSize: "14px", fontWeight: 600,
+            textDecoration: "none", letterSpacing: "0.3px",
+            transition: "opacity 0.2s",
+          }}>
+            Book Now
+          </a>
+        </div>
+      </div>
+    </FadeIn>
+  );
+}
+
+/* ─── Testimonial ─── */
+const testimonials = [
+  { name: "Jake & Michelle R.", loc: "Austin, TX", text: "Best day of our entire trip. Captain Brian knew every hidden cove and had the music cranked. We bought 4 t-shirts before we even left the dock. Absolutely coming back." },
+  { name: "SSgt Davis (Ret.)", loc: "Camp Lejeune, NC", text: "It's not every day you find a fellow Marine running a charter in paradise. The vet discount was a nice touch but the experience was worth full price and then some. Semper Fi, brother." },
+  { name: "The Henderson Family", loc: "Chicago, IL", text: "We did the full-day with our two teenagers and it was the first time in years nobody looked at their phone. Luna's Wake is a beautiful boat and Brian is the real deal." },
+];
+
+/* ─── Main App ─── */
+
+export default function KnottyMarineSite() {
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 60);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  return (
+    <div style={{ minHeight: "100vh", background: C.warmWhite, fontFamily: "'DM Sans', sans-serif", overflowX: "hidden" }}>
+      <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;0,800;1,400;1,700&family=Oswald:wght@300;400;500;600&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+
+      <Nav scrolled={scrolled} />
+      <Hero />
+
+      {/* ═══ SOCIAL PROOF BAR ═══ */}
+      <div style={{
+        background: C.cream, padding: "20px 24px",
+        display: "flex", justifyContent: "center", gap: "48px", flexWrap: "wrap",
+        borderBottom: `1px solid ${C.sand}40`,
+      }}>
+        {[
+          { num: "2024", label: "Boat of the Year" },
+          { num: "600 HP", label: "Twin Mercury Power" },
+          { num: "26", label: "Years USMC Service" },
+          { num: "30'", label: "Monterey Elite OB" },
+        ].map((s, i) => (
+          <FadeIn key={i} delay={i * 0.1}>
+            <div style={{ textAlign: "center" }}>
+              <span style={{ fontFamily: "'Playfair Display', serif", fontSize: "28px", fontWeight: 800, color: C.navy, display: "block" }}>
+                {s.num}
+              </span>
+              <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "11px", color: "#8b8378", letterSpacing: "1px" }}>
+                {s.label}
+              </span>
+            </div>
+          </FadeIn>
+        ))}
+      </div>
+
+      {/* ═══ CHARTERS ═══ */}
+      <section id="charters" style={{ padding: "80px 24px", background: `linear-gradient(180deg, ${C.warmWhite}, ${C.cream})` }}>
+        <div style={{ maxWidth: "1100px", margin: "0 auto" }}>
+          <FadeIn>
+            <div style={{ textAlign: "center", marginBottom: "56px" }}>
+              <p style={{ fontFamily: "'Oswald', sans-serif", fontSize: "12px", letterSpacing: "5px", color: C.rust, marginBottom: "10px", fontWeight: 500 }}>
+                CHOOSE YOUR ADVENTURE
+              </p>
+              <h2 style={{
+                fontFamily: "'Playfair Display', serif", fontSize: "clamp(32px, 5vw, 48px)",
+                fontWeight: 800, color: C.navy, margin: "0 0 12px", letterSpacing: "-0.03em",
+              }}>
+                Charter Experiences
+              </h2>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "16px", color: "#8b8378", maxWidth: "500px", margin: "0 auto", lineHeight: 1.6 }}>
+                Whether you want a quick snorkel run, a full day of island hopping, or a sunset with rum punch — we've got you.
+              </p>
+            </div>
+          </FadeIn>
+
+          <div style={{ display: "flex", gap: "24px", justifyContent: "center", flexWrap: "wrap", alignItems: "stretch" }}>
+            {charters.map((c, i) => (
+              <CharterCard key={i} charter={c} index={i} />
+            ))}
+          </div>
+
+          {/* Student Trip & Shuttle */}
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", marginTop: "40px", maxWidth: "800px", marginLeft: "auto", marginRight: "auto" }}>
+            <FadeIn>
+              <div style={{
+                background: `linear-gradient(135deg, ${C.navy}, ${C.midNavy})`,
+                borderRadius: "16px", padding: "28px", border: `2px solid ${C.sea}40`,
+              }}>
+                <span style={{ fontSize: "28px", display: "block", marginBottom: "12px" }}>🎓</span>
+                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "20px", fontWeight: 700, color: C.cream, margin: "0 0 4px" }}>
+                  {studentTrip.title}
+                </h3>
+                <p style={{ fontFamily: "'Oswald', sans-serif", fontSize: "18px", color: C.gold, margin: "0 0 12px", fontWeight: 600 }}>
+                  {studentTrip.price}
+                </p>
+                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: C.sand, lineHeight: 1.7, margin: "0 0 16px" }}>
+                  {studentTrip.desc}
+                </p>
+                {studentTrip.requirements.map((r, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                    <span style={{ color: C.sea, fontSize: "10px" }}>●</span>
+                    <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "12px", color: C.sand }}>{r}</span>
+                  </div>
+                ))}
+                <a href={studentTrip.bookUrl} style={{
+                  display: "block", textAlign: "center", marginTop: "16px", padding: "10px",
+                  borderRadius: "8px", background: C.sea, color: "#fff",
+                  fontFamily: "'DM Sans', sans-serif", fontSize: "13px", fontWeight: 600,
+                  textDecoration: "none",
+                }}>Book Student Trip</a>
+              </div>
+            </FadeIn>
+            <FadeIn delay={0.15}>
+              <div style={{
+                background: `linear-gradient(135deg, ${C.navy}, ${C.midNavy})`,
+                borderRadius: "16px", padding: "28px", border: `2px solid ${C.gold}30`,
+              }}>
+                <span style={{ fontSize: "28px", display: "block", marginBottom: "12px" }}>⛴️</span>
+                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "20px", fontWeight: 700, color: C.cream, margin: "0 0 4px" }}>
+                  {shuttleService.title}
+                </h3>
+                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: C.sand, lineHeight: 1.7, margin: "12px 0 16px" }}>
+                  {shuttleService.desc}
+                </p>
+                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "12px", color: C.gold, fontWeight: 600 }}>
+                  {shuttleService.note}
+                </p>
+                <a href={shuttleService.bookUrl} style={{
+                  display: "block", textAlign: "center", marginTop: "16px", padding: "10px",
+                  borderRadius: "8px", background: C.gold, color: C.navy,
+                  fontFamily: "'DM Sans', sans-serif", fontSize: "13px", fontWeight: 600,
+                  textDecoration: "none",
+                }}>Inquire About Shuttle</a>
+              </div>
+            </FadeIn>
+          </div>
+
+          <FadeIn delay={0.5}>
+            <div style={{
+              textAlign: "center", marginTop: "40px", padding: "24px",
+              background: "#fff", borderRadius: "12px", border: `1px solid ${C.sand}40`,
+            }}>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "14px", color: "#8b8378", margin: "0 0 6px" }}>
+                All charters include snorkel gear, drinks, ice, and Bluetooth speakers. No passport required for USVI trips.
+              </p>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: C.navy, margin: "0 0 6px", fontWeight: 600 }}>
+                Fuel is not included and is paid by guest at the conclusion of your trip at current market price.
+              </p>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: "#8b8378", margin: "0 0 6px" }}>
+                Gratuity not included but appreciated.
+              </p>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "14px", color: C.rust, margin: 0, fontWeight: 600 }}>
+                Military, veterans & locals receive 10% off all bookings.
+              </p>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* ═══ ABOUT / THE STORY ═══ */}
+      <WavesDivider color={C.navy} flip />
+      <section id="about" style={{
+        padding: "80px 24px",
+        background: `linear-gradient(175deg, ${C.deepNavy}, ${C.navy} 50%, ${C.midNavy})`,
+        position: "relative", overflow: "hidden",
+      }}>
+        {/* watermark */}
+        <div style={{ position: "absolute", top: "10%", right: "5%", opacity: 0.02 }}>
+          <svg width="300" height="400" viewBox="0 0 60 80" fill="none">
+            <g stroke={C.gold} strokeWidth="4" fill="none" strokeLinecap="round">
+              <path d="M30 2 L30 18 C30 24,20 28,15 28 C9 28,5 24,5 18 C5 12,11 7,16 10 C21 13,26 18,24 24 C22 30,16 33,11 31" />
+              <path d="M30 18 L30 45 C30 52,36 57,43 57 C50 57,55 52,55 45 C55 38,48 33,42 35 C36 37,32 42,30 48" />
+              <path d="M30 48 L30 78" />
+            </g>
+          </svg>
+        </div>
+
+        <div style={{ maxWidth: "800px", margin: "0 auto", position: "relative", zIndex: 1 }}>
+          <FadeIn>
+            <p style={{ fontFamily: "'Oswald', sans-serif", fontSize: "12px", letterSpacing: "5px", color: C.gold, marginBottom: "10px", fontWeight: 500, textAlign: "center" }}>
+              THE CAPTAIN'S STORY
+            </p>
+            <h2 style={{
+              fontFamily: "'Playfair Display', serif", fontSize: "clamp(32px, 5vw, 48px)",
+              fontWeight: 800, color: C.cream, margin: "0 0 8px", letterSpacing: "-0.03em", textAlign: "center",
+            }}>
+              From Dress Blues to Ocean Blues
+            </h2>
+            <StarSeparator />
+          </FadeIn>
+
+          <FadeIn delay={0.2}>
+            <div style={{
+              display: "grid", gridTemplateColumns: "1fr 2fr", gap: "48px", marginTop: "40px", alignItems: "start",
+            }}>
+              {/* Portrait placeholder */}
+              <div style={{
+                aspectRatio: "3/4", borderRadius: "12px", overflow: "hidden",
+                background: `linear-gradient(135deg, ${C.midNavy}, ${C.navy})`,
+                border: `2px solid ${C.gold}25`,
+              }}>
+                <img src={familyPhoto} alt="Captain Brian D Vukelic with family in the U.S. Virgin Islands" style={{
+                  width: "100%", height: "100%", objectFit: "cover", objectPosition: "center top",
+                }} />
+              </div>
+
+              <div>
+                <p style={{
+                  fontFamily: "'DM Sans', sans-serif", fontSize: "16px", lineHeight: 1.8,
+                  color: C.sand, margin: "0 0 20px",
+                }}>
+                  After 26 years in the United States Marine Corps, Captain Brian traded his dress blues for a boat and flip flops and his Assault Amphibian Vehicle for a boat slip in the U.S. Virgin Islands.
+                </p>
+                <p style={{
+                  fontFamily: "'DM Sans', sans-serif", fontSize: "16px", lineHeight: 1.8,
+                  color: C.sand, margin: "0 0 20px",
+                }}>
+                  But some things never change — the discipline, the attention to detail, and the commitment to taking care of people. That's the foundation of Knotty Marine Charters: a veteran-owned operation built on service, safety, and making sure every single person aboard Luna's Wake has the best day of their vacation.
+                </p>
+                <p style={{
+                  fontFamily: "'DM Sans', sans-serif", fontSize: "16px", lineHeight: 1.8,
+                  color: C.sand, margin: "0 0 20px",
+                }}>
+                  A proud grandfather, father, and husband — Brian named the boat Luna's Wake after his granddaughter Luna. Every charter is a family affair, and every guest is treated like one of our own.
+                </p>
+                <p style={{
+                  fontFamily: "'Playfair Display', serif", fontStyle: "italic",
+                  fontSize: "20px", lineHeight: 1.5, color: C.cream, margin: "0 0 24px",
+                }}>
+                  "I served my country for 26 years. Now I serve rum punch."
+                </p>
+
+                <div style={{
+                  display: "inline-flex", padding: "10px 20px", borderRadius: "8px",
+                  border: `1.5px solid ${C.rust}60`, background: `${C.rust}10`, gap: "12px", alignItems: "center",
+                }}>
+                  <span style={{ fontFamily: "'Oswald', sans-serif", fontSize: "12px", letterSpacing: "3px", color: C.rust, fontWeight: 600 }}>
+                    ★ SERVICE DISABLED VETERAN OWNED & OPERATED
+                  </span>
+                </div>
+              </div>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+      <WavesDivider color={C.navy} />
+
+      {/* ═══ THE BOAT ═══ */}
+      <section id="the-boat" style={{ padding: "80px 24px", background: `linear-gradient(180deg, ${C.warmWhite}, ${C.cream})` }}>
+        <div style={{ maxWidth: "900px", margin: "0 auto" }}>
+          <FadeIn>
+            <div style={{ textAlign: "center", marginBottom: "48px" }}>
+              <p style={{ fontFamily: "'Oswald', sans-serif", fontSize: "12px", letterSpacing: "5px", color: C.rust, marginBottom: "10px", fontWeight: 500 }}>
+                YOUR VESSEL
+              </p>
+              <h2 style={{
+                fontFamily: "'Playfair Display', serif", fontSize: "clamp(32px, 5vw, 48px)",
+                fontWeight: 800, color: C.navy, margin: "0 0 4px", letterSpacing: "-0.03em",
+              }}>
+                Luna's Wake
+              </h2>
+              <p style={{ fontFamily: "'Playfair Display', serif", fontStyle: "italic", fontSize: "18px", color: "#8b8378" }}>
+                Named after Captain Brian's granddaughter
+              </p>
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={0.2}>
+            <div style={{
+              borderRadius: "20px", overflow: "hidden",
+              background: `linear-gradient(135deg, ${C.navy}, ${C.midNavy})`,
+              border: `1px solid ${C.gold}20`,
+              display: "grid", gridTemplateColumns: "1fr 1fr",
+            }}>
+              {/* Boat image */}
+              <div style={{ overflow: "hidden" }}>
+                <img src={boatSide} alt="2025 Monterey 30 Elite - Luna's Wake" style={{
+                  width: "100%", height: "100%", objectFit: "cover",
+                }} />
+              </div>
+
+              {/* Specs */}
+              <div style={{ padding: "36px 32px" }}>
+                <h3 style={{
+                  fontFamily: "'Playfair Display', serif", fontSize: "22px", fontWeight: 700,
+                  color: C.cream, margin: "0 0 4px",
+                }}>
+                  Vessel Specifications
+                </h3>
+                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: C.sand, margin: "0 0 24px", opacity: 0.7 }}>
+                  Comfort, safety, and style on the water
+                </p>
+                {[
+                  ["Length", "30 ft — 2025 Monterey 30 Elite"],
+                  ["Awards", "2024 Boat of the Year"],
+                  ["Capacity", "Up to 10 guests"],
+                  ["Max Power", "600 HP Twin Mercury Outboards"],
+                  ["Sound", "Fusion Apollo, 6 JL Speakers + 2 Subs"],
+                  ["Features", "Hardtop, wetbar, electric head"],
+                  ["Safety", "Full USCG compliant, NMMA certified"],
+                  ["Snorkel Gear", "Included for all guests"],
+                  ["Home Port", "St. Thomas, USVI"],
+                ].map(([label, val], i) => (
+                  <div key={i} style={{
+                    display: "flex", justifyContent: "space-between", padding: "10px 0",
+                    borderBottom: `1px solid ${C.gold}12`,
+                  }}>
+                    <span style={{ fontFamily: "'Oswald', sans-serif", fontSize: "11px", letterSpacing: "2px", color: C.gold, fontWeight: 500 }}>
+                      {label.toUpperCase()}
+                    </span>
+                    <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: C.sand }}>
+                      {val}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* ═══ POPULAR DESTINATIONS ═══ */}
+      <section style={{
+        padding: "80px 24px",
+        background: `linear-gradient(175deg, ${C.deepNavy}, ${C.navy} 50%, ${C.midNavy})`,
+      }}>
+        <div style={{ maxWidth: "900px", margin: "0 auto" }}>
+          <FadeIn>
+            <div style={{ textAlign: "center", marginBottom: "48px" }}>
+              <p style={{ fontFamily: "'Oswald', sans-serif", fontSize: "12px", letterSpacing: "5px", color: C.gold, marginBottom: "10px", fontWeight: 500 }}>WHERE WE TAKE YOU</p>
+              <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(28px, 5vw, 42px)", fontWeight: 800, color: C.cream, margin: "0 0 8px", letterSpacing: "-0.03em" }}>Popular Destinations</h2>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "15px", color: C.sand, maxWidth: "500px", margin: "0 auto", opacity: 0.8 }}>No passport required — all within the U.S. Virgin Islands</p>
+            </div>
+          </FadeIn>
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(260px, 1fr))", gap: "16px" }}>
+            {[
+              { name: "Buck Island", desc: "Swim with dozens of green sea turtles and snorkel a sunken Navy barge wreck in 30 feet of crystal-clear water.", icon: "🐢" },
+              { name: "Water Island / Honeymoon Beach", desc: "The 'fourth Virgin Island' — white sand beaches, beach bars, and total relaxation just minutes from St. Thomas.", icon: "🏖️" },
+              { name: "St. John North Shore", desc: "Trunk Bay, Cinnamon Bay, Maho Bay — the Virgin Islands National Park has some of the most beautiful beaches on earth.", icon: "🌴" },
+              { name: "Pizza Pi", desc: "The famous floating pizza boat anchored in Christmas Cove. Pull up, order from the water, and eat the best pizza in the Caribbean.", icon: "🍕" },
+              { name: "Lime Out", desc: "A floating taco bar in Coral Harbor. Craft tacos, cold drinks, and Instagram-worthy views — accessible only by boat.", icon: "🌮" },
+              { name: "Lovango Beach Club", desc: "An upscale beach club on its own private island. Beach chairs, cocktails, and food — only accessible by water.", icon: "🍹" },
+              { name: "Christmas Cove", desc: "A protected anchorage with great snorkeling, calm water, and easy access to Pizza Pi. Perfect for families.", icon: "⚓" },
+              { name: "Secret Harbor / Great St. James", desc: "Vibrant reef snorkeling with less crowds. A favorite of locals and repeat visitors who know the real spots.", icon: "🤿" },
+            ].map((d, i) => (
+              <FadeIn key={i} delay={i * 0.08}>
+                <div style={{ background: `${C.cream}06`, borderRadius: "12px", padding: "20px", border: `1px solid ${C.gold}12`, height: "100%" }}>
+                  <span style={{ fontSize: "24px", display: "block", marginBottom: "10px" }}>{d.icon}</span>
+                  <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "17px", fontWeight: 700, color: C.cream, margin: "0 0 6px" }}>{d.name}</h3>
+                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: C.sand, lineHeight: 1.6, margin: 0, opacity: 0.8 }}>{d.desc}</p>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ WHAT TO BRING ═══ */}
+      <section style={{ padding: "80px 24px", background: `linear-gradient(180deg, ${C.warmWhite}, ${C.cream})` }}>
+        <div style={{ maxWidth: "900px", margin: "0 auto" }}>
+          <FadeIn>
+            <div style={{ textAlign: "center", marginBottom: "48px" }}>
+              <p style={{ fontFamily: "'Oswald', sans-serif", fontSize: "12px", letterSpacing: "5px", color: C.rust, marginBottom: "10px", fontWeight: 500 }}>BEFORE YOU BOARD</p>
+              <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(28px, 5vw, 42px)", fontWeight: 800, color: C.navy, margin: 0, letterSpacing: "-0.03em" }}>What to Bring</h2>
+            </div>
+          </FadeIn>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+            <FadeIn>
+              <div style={{ background: "#fff", borderRadius: "16px", padding: "28px", border: `1px solid ${C.sand}40` }}>
+                <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: "14px", letterSpacing: "3px", color: C.sea, marginBottom: "16px", fontWeight: 600 }}>✓ BRING WITH YOU</h3>
+                {["Towels (2 per person recommended)", "Reef-safe sunscreen — LOTION ONLY", "Sunglasses with a strap (Croakies)", "Hat that fits snugly (it's windy!)", "Waterproof phone pouch or case", "Cash for beach bars, food stops & fuel", "Light cover-up or rash guard (UPF recommended)", "Dry bag for electronics & valuables", "Snacks & sandwiches if desired (cooler space available)", "Valid ID (for beach bar stops)", "Sense of adventure"].map((item, i) => (
+                  <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "10px", marginBottom: "8px" }}>
+                    <span style={{ color: C.sea, fontSize: "14px", marginTop: "1px" }}>✓</span>
+                    <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "14px", color: "#5a554e", lineHeight: 1.5 }}>{item}</span>
+                  </div>
+                ))}
+              </div>
+            </FadeIn>
+            <FadeIn delay={0.15}>
+              <div style={{ background: "#fff", borderRadius: "16px", padding: "28px", border: `2px solid ${C.rust}25` }}>
+                <h3 style={{ fontFamily: "'Oswald', sans-serif", fontSize: "14px", letterSpacing: "3px", color: C.rust, marginBottom: "16px", fontWeight: 600 }}>✗ DO NOT BRING</h3>
+                {[
+                  { item: "NO spray sunscreen", note: "Damages the boat's gel coat, upholstery, and the marine environment" },
+                  { item: "NO glass bottles", note: "Safety hazard on the water" },
+                  { item: "NO hard-soled shoes", note: "Soft-soled boat shoes or bare feet only" },
+                  { item: "NO bananas", note: "Old sailor superstition — we keep it fun!" },
+                  { item: "NO bad vibes", note: "This is your best day of vacation!" },
+                ].map((x, i) => (
+                  <div key={i} style={{ marginBottom: "12px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                      <span style={{ color: C.rust, fontSize: "14px", fontWeight: 700 }}>✗</span>
+                      <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "14px", color: C.navy, fontWeight: 600 }}>{x.item}</span>
+                    </div>
+                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "12px", color: "#8b8378", margin: "2px 0 0 24px", lineHeight: 1.4 }}>{x.note}</p>
+                  </div>
+                ))}
+                <div style={{ marginTop: "20px", padding: "14px 16px", borderRadius: "10px", background: `${C.rust}08`, border: `1px solid ${C.rust}20` }}>
+                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: C.rust, margin: 0, lineHeight: 1.6, fontWeight: 600 }}>
+                    IMPORTANT: Apply sunscreen BEFORE arriving at the boat. Spray sunscreen is strictly prohibited aboard Luna's Wake as it damages the vessel's surfaces and is harmful to the marine environment.
+                  </p>
+                </div>
+              </div>
+            </FadeIn>
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ FAQ ═══ */}
+      <section style={{ padding: "80px 24px", background: `linear-gradient(175deg, ${C.deepNavy}, ${C.navy})` }}>
+        <div style={{ maxWidth: "800px", margin: "0 auto" }}>
+          <FadeIn>
+            <div style={{ textAlign: "center", marginBottom: "48px" }}>
+              <p style={{ fontFamily: "'Oswald', sans-serif", fontSize: "12px", letterSpacing: "5px", color: C.gold, marginBottom: "10px", fontWeight: 500 }}>QUESTIONS?</p>
+              <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: "clamp(28px, 5vw, 42px)", fontWeight: 800, color: C.cream, margin: 0, letterSpacing: "-0.03em" }}>Frequently Asked</h2>
+            </div>
+          </FadeIn>
+          <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+            {[
+              { q: "What's included in the charter price?", a: "Snorkel gear, cooler with drinks and ice, Bluetooth sound system, and your USCG-licensed captain. Fuel and gratuity are not included." },
+              { q: "How does fuel cost work?", a: "Fuel is paid by the guest at the conclusion of your trip based on current market price. Your captain will calculate the exact amount based on distance traveled." },
+              { q: "Where do we meet?", a: "We offer pickup from multiple locations including Red Hook, Havensight (cruise ship dock), and St. John. Exact meeting point is confirmed when you book." },
+              { q: "What if weather is bad?", a: "Safety is our top priority. If conditions are unsafe, we'll work with you to reschedule. We monitor weather closely and communicate early if there are concerns." },
+              { q: "Do we need passports?", a: "No! All our USVI charters stay within U.S. territory — no passport required. If you want to visit the British Virgin Islands, passports are required and additional customs fees apply." },
+              { q: "Can we bring our own food and drinks?", a: "Absolutely. We have cooler space available. We also stop at amazing waterfront restaurants and floating food boats like Pizza Pi and Lime Out." },
+              { q: "Is this good for kids?", a: "Yes! Captain Brian is a grandfather himself. We love families and have gear for all ages. Life jackets available in all sizes." },
+              { q: "How far in advance should we book?", a: "As far ahead as possible, especially during peak season (December–April). We often book out 2-4 weeks in advance." },
+              { q: "Do you accommodate special occasions?", a: "Yes — proposals, birthdays, anniversaries, bachelor/bachelorette parties. Let us know and we'll help make it special." },
+              { q: "Do you offer a St. John shuttle?", a: "Yes! We offer private water shuttle service between St. Thomas and St. John. Skip the ferry lines and travel in style. Contact us for pricing." },
+            ].map((faq, i) => (
+              <FadeIn key={i} delay={i * 0.05}>
+                <div style={{ background: `${C.cream}06`, borderRadius: "12px", padding: "20px 24px", border: `1px solid ${C.gold}10` }}>
+                  <h3 style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "15px", fontWeight: 600, color: C.cream, margin: "0 0 8px" }}>{faq.q}</h3>
+                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "14px", color: C.sand, lineHeight: 1.7, margin: 0, opacity: 0.85 }}>{faq.a}</p>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ VETERANS SECTION ═══ */}
+      <section id="veterans" style={{
+        padding: "80px 24px",
+        background: `linear-gradient(135deg, ${C.navy}, ${C.midNavy})`,
+        textAlign: "center", position: "relative", overflow: "hidden",
+      }}>
+        <div style={{ position: "absolute", inset: 0, opacity: 0.03, background: `repeating-linear-gradient(45deg, ${C.gold} 0px, ${C.gold} 1px, transparent 1px, transparent 20px)` }} />
+        <div style={{ maxWidth: "600px", margin: "0 auto", position: "relative", zIndex: 1 }}>
+          <FadeIn>
+            <div style={{
+              display: "inline-block", padding: "14px 32px", borderRadius: "10px",
+              border: `2px solid ${C.rust}`, background: `${C.rust}10`, marginBottom: "24px",
+            }}>
+              <p style={{ fontFamily: "'Oswald', sans-serif", fontSize: "16px", letterSpacing: "5px", color: C.rust, margin: "0 0 2px", fontWeight: 600 }}>
+                ★ SERVICE DISABLED VETERAN OWNED ★
+              </p>
+              <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "10px", letterSpacing: "3px", color: C.sand, margin: 0, opacity: 0.7 }}>
+                UNITED STATES MARINE CORPS • 26 YEARS
+              </p>
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={0.15}>
+            <h2 style={{
+              fontFamily: "'Playfair Display', serif", fontSize: "clamp(28px, 5vw, 42px)",
+              fontWeight: 800, color: C.cream, margin: "0 0 12px", letterSpacing: "-0.03em",
+            }}>
+              We Take Care of Our Own
+            </h2>
+            <p style={{
+              fontFamily: "'DM Sans', sans-serif", fontSize: "16px", lineHeight: 1.8,
+              color: C.sand, margin: "0 0 32px",
+            }}>
+              Knotty Marine was built on the values of service, and that doesn't stop at the dock.
+              Active military, veterans, and USVI locals always receive a discount — because this community is family.
+            </p>
+          </FadeIn>
+
+          <FadeIn delay={0.3}>
+            <div style={{
+              padding: "32px 40px", borderRadius: "16px",
+              background: `linear-gradient(135deg, ${C.deepNavy}, ${C.navy})`,
+              border: `2px solid ${C.gold}30`,
+              boxShadow: `0 12px 48px rgba(0,0,0,0.3)`,
+            }}>
+              <p style={{
+                fontFamily: "'Playfair Display', serif", fontSize: "22px",
+                color: C.cream, margin: "0 0 8px", fontWeight: 700,
+              }}>
+                Military, Veterans & Locals
+              </p>
+              <p style={{
+                fontFamily: "'Oswald', sans-serif", fontSize: "48px",
+                color: C.gold, margin: "0 0 8px", fontWeight: 600, letterSpacing: "3px", lineHeight: 1,
+              }}>
+                10% OFF
+              </p>
+              <p style={{
+                fontFamily: "'DM Sans', sans-serif", fontSize: "14px",
+                color: C.sand, margin: "0 0 20px", letterSpacing: "0.5px",
+              }}>
+                Every charter, every time. Just show valid ID at booking.
+              </p>
+              <a href={FH_ALL} style={{
+                display: "inline-block", padding: "12px 32px", borderRadius: "8px",
+                background: C.gold, color: C.navy,
+                fontFamily: "'DM Sans', sans-serif", fontSize: "14px", fontWeight: 600,
+                textDecoration: "none", letterSpacing: "0.3px",
+              }}>
+                Book with Military Discount
+              </a>
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* ═══ TESTIMONIALS ═══ */}
+      <section style={{ padding: "80px 24px", background: `linear-gradient(180deg, ${C.cream}, ${C.warmWhite})` }}>
+        <div style={{ maxWidth: "1000px", margin: "0 auto" }}>
+          <FadeIn>
+            <div style={{ textAlign: "center", marginBottom: "48px" }}>
+              <p style={{ fontFamily: "'Oswald', sans-serif", fontSize: "12px", letterSpacing: "5px", color: C.rust, marginBottom: "10px", fontWeight: 500 }}>
+                WHAT THEY SAY
+              </p>
+              <h2 style={{
+                fontFamily: "'Playfair Display', serif", fontSize: "clamp(28px, 5vw, 42px)",
+                fontWeight: 800, color: C.navy, margin: 0, letterSpacing: "-0.03em",
+              }}>
+                Straight from the Crew
+              </h2>
+            </div>
+          </FadeIn>
+
+          <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))", gap: "24px" }}>
+            {testimonials.map((t, i) => (
+              <FadeIn key={i} delay={i * 0.15}>
+                <div style={{
+                  background: "#fff", borderRadius: "16px", padding: "28px",
+                  border: `1px solid ${C.sand}40`,
+                  boxShadow: "0 4px 20px rgba(0,0,0,0.03)", height: "100%",
+                  display: "flex", flexDirection: "column",
+                }}>
+                  <div style={{ display: "flex", gap: "4px", marginBottom: "16px" }}>
+                    {[1,2,3,4,5].map(s => (
+                      <svg key={s} width="16" height="16" viewBox="0 0 16 16" fill={C.gold}>
+                        <polygon points="8,1 10,6 15,6.5 11,9.5 12.5,14.5 8,11.5 3.5,14.5 5,9.5 1,6.5 6,6" />
+                      </svg>
+                    ))}
+                  </div>
+                  <p style={{
+                    fontFamily: "'DM Sans', sans-serif", fontSize: "14px", lineHeight: 1.7,
+                    color: "#5a554e", margin: "0 0 20px", flex: 1, fontStyle: "italic",
+                  }}>
+                    "{t.text}"
+                  </p>
+                  <div>
+                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "14px", fontWeight: 600, color: C.navy, margin: "0 0 2px" }}>
+                      {t.name}
+                    </p>
+                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "12px", color: "#8b8378", margin: 0 }}>
+                      {t.loc}
+                    </p>
+                  </div>
+                </div>
+              </FadeIn>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ═══ BOOKING CTA ═══ */}
+      <section id="book-now" style={{
+        padding: "80px 24px",
+        background: `linear-gradient(175deg, ${C.deepNavy}, ${C.navy})`,
+        textAlign: "center", position: "relative", overflow: "hidden",
+      }}>
+        <div style={{ position: "absolute", top: "50%", left: "50%", transform: "translate(-50%, -50%)", opacity: 0.015 }}>
+          <svg width="500" height="500" viewBox="0 0 200 200" fill="none">
+            <circle cx="100" cy="100" r="95" stroke={C.gold} strokeWidth="0.5" />
+            {[0,45,90,135,180,225,270,315].map(a => (
+              <line key={a} x1={100+Math.cos(a*Math.PI/180)*20} y1={100+Math.sin(a*Math.PI/180)*20}
+                x2={100+Math.cos(a*Math.PI/180)*95} y2={100+Math.sin(a*Math.PI/180)*95}
+                stroke={C.gold} strokeWidth={a%90===0?"1":"0.3"} />
+            ))}
+          </svg>
+        </div>
+
+        <div style={{ maxWidth: "600px", margin: "0 auto", position: "relative", zIndex: 1 }}>
+          <FadeIn>
+            <KnotIcon size={44} color={C.gold} strokeW={2} />
+            <h2 style={{
+              fontFamily: "'Playfair Display', serif", fontSize: "clamp(32px, 5vw, 52px)",
+              fontWeight: 800, color: C.cream, margin: "20px 0 8px", letterSpacing: "-0.03em",
+            }}>
+              Ready to Get Knotty?
+            </h2>
+            <p style={{
+              fontFamily: "'DM Sans', sans-serif", fontSize: "16px", lineHeight: 1.7,
+              color: C.sand, margin: "0 0 36px", opacity: 0.85,
+            }}>
+              Book your private charter aboard Luna's Wake and discover why Knotty Marine is the USVI's best day on the water. Spots fill fast — especially during peak season.
+            </p>
+          </FadeIn>
+
+          <FadeIn delay={0.2}>
+            <div style={{ display: "flex", gap: "16px", justifyContent: "center", flexWrap: "wrap", marginBottom: "32px" }}>
+              <a href={FH_ALL} style={{
+                display: "inline-flex", alignItems: "center", gap: "8px",
+                padding: "16px 36px", borderRadius: "10px", background: C.gold, color: C.navy,
+                fontFamily: "'DM Sans', sans-serif", fontSize: "16px", fontWeight: 700,
+                textDecoration: "none", boxShadow: `0 6px 28px ${C.gold}30`,
+              }}>
+                Book Your Date
+              </a>
+              <a href="tel:+15712327040" style={{
+                display: "inline-flex", alignItems: "center", gap: "8px",
+                padding: "16px 36px", borderRadius: "10px",
+                background: "transparent", color: C.cream,
+                border: `1.5px solid ${C.cream}30`,
+                fontFamily: "'DM Sans', sans-serif", fontSize: "16px", fontWeight: 500,
+                textDecoration: "none",
+              }}>
+                Call Us Direct
+              </a>
+            </div>
+          </FadeIn>
+
+          <FadeIn delay={0.35}>
+            <div style={{ display: "flex", gap: "32px", justifyContent: "center", flexWrap: "wrap" }}>
+              {[
+                { label: "Email", value: "KMCUSVI@gmail.com" },
+                { label: "Phone", value: "(571) 232-7040" },
+                { label: "Location", value: "St. Thomas, USVI" },
+              ].map((c, i) => (
+                <div key={i} style={{ textAlign: "center" }}>
+                  <p style={{ fontFamily: "'Oswald', sans-serif", fontSize: "10px", letterSpacing: "3px", color: C.gold, margin: "0 0 4px", fontWeight: 500 }}>
+                    {c.label.toUpperCase()}
+                  </p>
+                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "14px", color: C.sand, margin: 0 }}>
+                    {c.value}
+                  </p>
+                </div>
+              ))}
+            </div>
+          </FadeIn>
+        </div>
+      </section>
+
+      {/* ═══ FOOTER ═══ */}
+      <footer style={{
+        background: C.deepNavy, padding: "32px 24px",
+        borderTop: `3px solid ${C.gold}20`,
+      }}>
+        <div style={{ maxWidth: "900px", margin: "0 auto", display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "20px" }}>
+          <div>
+            <p style={{
+              fontFamily: "'Playfair Display', serif", fontSize: "20px",
+              color: C.cream, margin: "0 0 2px", fontWeight: 700,
+            }}>
+              Knotty Marine Charters
+            </p>
+            <p style={{
+              fontFamily: "'DM Sans', sans-serif", fontSize: "12px",
+              color: C.sand, margin: 0, opacity: 0.5, letterSpacing: "1px",
+            }}>
+              U.S. Virgin Islands · Aboard Luna's Wake
+            </p>
+          </div>
+          <div style={{ textAlign: "right" }}>
+            <div style={{
+              display: "inline-flex", padding: "6px 14px", borderRadius: "6px",
+              border: `1px solid ${C.rust}50`, background: `${C.rust}08`,
+              gap: "6px", alignItems: "center", marginBottom: "8px",
+            }}>
+              <span style={{ fontFamily: "'Oswald', sans-serif", fontSize: "10px", letterSpacing: "2px", color: C.rust, fontWeight: 600 }}>
+                ★ SERVICE DISABLED VETERAN OWNED
+              </span>
+            </div>
+            <p style={{
+              fontFamily: "'Playfair Display', serif", fontStyle: "italic",
+              fontSize: "14px", color: C.gold, margin: 0, opacity: 0.4,
+            }}>
+              "Sun, Fun, Saltwater Memories"
+            </p>
+          </div>
+        </div>
+        <div style={{ maxWidth: "900px", margin: "16px auto 0", paddingTop: "16px", borderTop: `1px solid ${C.gold}10` }}>
+          <p style={{
+            fontFamily: "'DM Sans', sans-serif", fontSize: "11px",
+            color: C.sand, margin: 0, opacity: 0.3, textAlign: "center",
+          }}>
+            © 2026 Knotty Marine Charters LLC · All Rights Reserved
+          </p>
+        </div>
+      </footer>
+    </div>
+  );
+}
