@@ -3,6 +3,30 @@ import boatSide from './boat-side.jpg';
 import boatSunset from './boat-sunset.jpg';
 import boatAction from './boat-action.jpg';
 import familyPhoto from './family.jpg';
+
+/* ════════════════════════════════════════════════════════
+   SETUP — FILL THESE IN
+   ════════════════════════════════════════════════════════
+
+   1. FORM EMAIL (Formspree — free):
+      a. Go to https://formspree.io and sign up with KMCUSVI@gmail.com
+      b. Click "New Form" → name it "KMC Booking"
+      c. Copy your endpoint (e.g. https://formspree.io/f/xpzgdabk)
+      d. Paste it below replacing YOUR_FORMSPREE_ENDPOINT
+
+   2. BOOKED DATES — add any dates already booked:
+      Format: 'YYYY-MM-DD'  e.g. '2026-06-15'
+      These show as red/unavailable on the calendar.
+   ════════════════════════════════════════════════════════ */
+
+const FORMSPREE_ENDPOINT = "YOUR_FORMSPREE_ENDPOINT";
+// Example: "https://formspree.io/f/xpzgdabk"
+
+const BOOKED_DATES = new Set([
+  // '2026-06-01',
+  // '2026-06-15',
+  // Add your booked/unavailable dates here
+]);
 import lunaPhoto from './luna.jpg';
 
 /* ─── Brand Tokens ─── */
@@ -34,18 +58,61 @@ function useWindowWidth() {
 
 /* ─── Backend Placeholder Functions ─── */
 async function sendBookingEmail(data) {
-  // TODO: Connect to EmailJS, SendGrid, or Netlify Forms
-  // Example: await emailjs.send('service_id', 'template_id', data)
-  // Example: await fetch('/api/book', { method: 'POST', body: JSON.stringify(data) })
-  console.log("[KMC] Booking email → KMCUSVI@gmail.com:", data);
-  return { success: true, method: "email" };
+  // PRIMARY: Formspree (uncomment and add your endpoint once set up at formspree.io)
+  if (FORMSPREE_ENDPOINT && FORMSPREE_ENDPOINT !== "YOUR_FORMSPREE_ENDPOINT") {
+    const res = await fetch(FORMSPREE_ENDPOINT, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify({
+        _subject: `New Charter Request — ${data.tripLabel} on ${data.date}`,
+        _replyto: data.email,
+        "Guest Name": data.name,
+        "Email": data.email,
+        "Phone": data.phone,
+        "Charter": data.tripLabel,
+        "Date": data.date,
+        "Time": data.time,
+        "Guests": `${data.guests} guests`,
+        "Pickup Location": data.pickup || "Not specified",
+        "Special Requests": data.requests || "None",
+        "Submitted": new Date().toLocaleString("en-US", { timeZone: "America/New_York" }),
+      }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err?.errors?.[0]?.message || "Submission failed — please call us directly.");
+    }
+    return res.json();
+  }
+
+  // FALLBACK: mailto — opens guest's email client with all booking details pre-filled.
+  // Works immediately with zero setup. Brian receives the email at KMCUSVI@gmail.com.
+  const subject = encodeURIComponent(
+    `Charter Booking Request — ${data.tripLabel} on ${data.date}`
+  );
+  const body = encodeURIComponent(
+    `Hi Captain Brian,\n\nI'd like to book a charter aboard Luna's Wake.\n\n` +
+    `Name: ${data.name}\n` +
+    `Phone: ${data.phone}\n` +
+    `Email: ${data.email}\n\n` +
+    `Charter: ${data.tripLabel}\n` +
+    `Date: ${data.date}\n` +
+    `Start Time: ${data.time}\n` +
+    `Number of Guests: ${data.guests}\n` +
+    `Pickup Location: ${data.pickup || "Not specified"}\n\n` +
+    `Special Requests:\n${data.requests || "None"}\n\n` +
+    `I have read and accept the weather and cancellation policy.\n\n` +
+    `Please confirm my booking. Thank you!`
+  );
+  window.open(`mailto:KMCUSVI@gmail.com?subject=${subject}&body=${body}`);
+  return { success: true, method: "mailto" };
 }
 
 async function sendBookingTextAlert(data) {
-  // TODO: Connect to Twilio or similar SMS provider
-  // Example: await fetch('/.netlify/functions/sms-alert', { method: 'POST', body: JSON.stringify(data) })
-  console.log("[KMC] SMS alert → (571) 232-7040:", data);
-  return { success: true, method: "sms" };
+  // Future SMS integration — connect to Twilio for captain alerts
+  // await fetch('/api/sms', { method:'POST', body: JSON.stringify({ to: '+15712327040', body: `New booking: ${data.name} wants ${data.tripLabel} on ${data.date}` }) });
+  console.log("[KMC] SMS placeholder — booking from:", data.name, "on", data.date);
+  return { success: true };
 }
 
 /* ─── Availability Config ─── */
@@ -206,6 +273,107 @@ function StarSeparator() {
         <polygon points="6,0 7.5,4 12,4.5 8.5,7.5 9.5,12 6,9.5 2.5,12 3.5,7.5 0,4.5 4.5,4" />
       </svg>
       <div style={{ width: "60px", height: "1px", background: `${C.gold}40` }} />
+    </div>
+  );
+}
+
+/* ─── Availability Calendar ─── */
+function AvailabilityCalendar({ onSelectDate, selectedDate }) {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const [viewMonth, setViewMonth] = useState(today.getMonth());
+  const [viewYear, setViewYear] = useState(today.getFullYear());
+  const width = useWindowWidth();
+  const isMobile = width < 600;
+
+  const fmt = (y, m, d) =>
+    `${y}-${String(m + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+
+  const daysInMonth = new Date(viewYear, viewMonth + 1, 0).getDate();
+  const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+  const monthLabel = new Date(viewYear, viewMonth, 1).toLocaleString("default", { month: "long", year: "numeric" });
+  const dayNames = isMobile ? ["S","M","T","W","T","F","S"] : ["Sun","Mon","Tue","Wed","Thu","Fri","Sat"];
+
+  const prevMonth = () => {
+    if (viewMonth === 0) { setViewMonth(11); setViewYear((y) => y - 1); }
+    else setViewMonth((m) => m - 1);
+  };
+  const nextMonth = () => {
+    if (viewMonth === 11) { setViewMonth(0); setViewYear((y) => y + 1); }
+    else setViewMonth((m) => m + 1);
+  };
+
+  const getStatus = (y, m, d) => {
+    const date = new Date(y, m, d);
+    if (date < today) return "past";
+    if (BOOKED_DATES.has(fmt(y, m, d))) return "booked";
+    return "available";
+  };
+
+  const cells = [];
+  for (let i = 0; i < firstDay; i++) cells.push(null);
+  for (let d = 1; d <= daysInMonth; d++) cells.push(d);
+
+  return (
+    <div style={{ background: C.deepNavy, borderRadius: "16px", padding: isMobile ? "20px 16px" : "28px", border: `1px solid ${C.gold}20` }}>
+      {/* Month nav */}
+      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+        <button onClick={prevMonth} style={{ background: `${C.cream}10`, border: `1px solid ${C.gold}30`, color: C.cream, width: "38px", height: "38px", borderRadius: "8px", cursor: "pointer", fontSize: "20px", display: "flex", alignItems: "center", justifyContent: "center" }}>‹</button>
+        <h3 style={{ fontFamily: "'Playfair Display',serif", fontSize: isMobile ? "17px" : "20px", fontWeight: 700, color: C.cream, margin: 0 }}>{monthLabel}</h3>
+        <button onClick={nextMonth} style={{ background: `${C.cream}10`, border: `1px solid ${C.gold}30`, color: C.cream, width: "38px", height: "38px", borderRadius: "8px", cursor: "pointer", fontSize: "20px", display: "flex", alignItems: "center", justifyContent: "center" }}>›</button>
+      </div>
+
+      {/* Day headers */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: "4px", marginBottom: "6px" }}>
+        {dayNames.map((d, i) => (
+          <div key={i} style={{ textAlign: "center", fontFamily: "'Oswald',sans-serif", fontSize: "11px", letterSpacing: "1px", color: `${C.sand}70`, padding: "4px 0" }}>{d}</div>
+        ))}
+      </div>
+
+      {/* Days grid */}
+      <div style={{ display: "grid", gridTemplateColumns: "repeat(7,1fr)", gap: "4px" }}>
+        {cells.map((day, i) => {
+          if (!day) return <div key={`e${i}`} />;
+          const dateStr = fmt(viewYear, viewMonth, day);
+          const status = getStatus(viewYear, viewMonth, day);
+          const isSelected = selectedDate === dateStr;
+          const isToday = fmt(today.getFullYear(), today.getMonth(), today.getDate()) === dateStr;
+          const canClick = status === "available";
+
+          let bg = "transparent", fg = `${C.sand}40`, border = "1px solid transparent";
+          if (isSelected)        { bg = C.gold;              fg = C.navy;               border = "none"; }
+          else if (isToday)      { bg = `${C.sea}30`;        fg = C.sea;                border = `1px solid ${C.sea}60`; }
+          else if (status === "available") { bg = `${C.gold}10`; fg = C.cream;          border = `1px solid ${C.gold}22`; }
+          else if (status === "booked")    { bg = `${C.rust}12`; fg = `${C.rust}50`;    border = `1px solid ${C.rust}18`; }
+
+          return (
+            <div key={dateStr} onClick={() => canClick && onSelectDate(dateStr)}
+              style={{ height: isMobile ? "36px" : "44px", borderRadius: "8px", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", background: bg, border, cursor: canClick ? "pointer" : "default", gap: "2px", transition: "all 0.15s" }}>
+              <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: isMobile ? "12px" : "13px", fontWeight: isSelected ? 700 : 500, color: fg, lineHeight: 1 }}>{day}</span>
+              {status === "available" && !isSelected && (
+                <div style={{ width: "4px", height: "4px", borderRadius: "50%", background: "#4CAF50" }} />
+              )}
+              {status === "booked" && (
+                <div style={{ width: "4px", height: "4px", borderRadius: "50%", background: C.rust, opacity: 0.5 }} />
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      {/* Legend */}
+      <div style={{ display: "flex", gap: "14px", marginTop: "18px", flexWrap: "wrap", justifyContent: "center" }}>
+        {[{ dot: "#4CAF50", label: "Available" }, { dot: C.rust, label: "Booked" }, { dot: C.sea, label: "Today" }, { dot: C.gold, label: "Selected" }].map((l) => (
+          <div key={l.label} style={{ display: "flex", alignItems: "center", gap: "5px" }}>
+            <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: l.dot, flexShrink: 0 }} />
+            <span style={{ fontFamily: "'DM Sans',sans-serif", fontSize: "11px", color: C.sand, opacity: 0.8 }}>{l.label}</span>
+          </div>
+        ))}
+      </div>
+
+      <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: "11px", color: C.sand, opacity: 0.45, margin: "12px 0 0", textAlign: "center", fontStyle: "italic" }}>
+        Tap an available date to select it. To add booked dates, update BOOKED_DATES at the top of App.jsx.
+      </p>
     </div>
   );
 }
@@ -486,6 +654,13 @@ function Hero() {
             </span>
           </div>
         </FadeIn>
+
+        <FadeIn delay={0.8}>
+          <div style={{ marginTop: "18px", display: "inline-flex", alignItems: "center", gap: "8px", padding: "8px 20px", borderRadius: "30px", background: "rgba(76,175,80,0.15)", border: "1px solid rgba(76,175,80,0.5)" }}>
+            <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: "#4CAF50", boxShadow: "0 0 8px #4CAF50" }} />
+            <span style={{ fontFamily: "'Oswald',sans-serif", fontSize: "12px", letterSpacing: "2px", color: C.cream, fontWeight: 500 }}>NOW BOOKING — SUMMER &amp; FALL 2026</span>
+          </div>
+        </FadeIn>
       </div>
 
       {/* Bottom wave */}
@@ -597,10 +772,19 @@ function BookingSection() {
 
   const set = (field, val) => setFormData((p) => ({ ...p, [field]: val }));
 
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const handleDateSelect = (dateStr) => {
+    setFormData((p) => ({ ...p, date: dateStr }));
+    setTimeout(() => formRef.current?.scrollIntoView({ behavior: "smooth", block: "start" }), 200);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!selectedTrip) { alert("Please select a charter type from the cards above."); return; }
+    if (!formData.date) { alert("Please select a date from the availability calendar above."); return; }
     if (!formData.policyAccepted) { alert("Please accept the weather and cancellation policy to continue."); return; }
-    if (!selectedTrip) { alert("Please select a charter type above."); return; }
+
     setFormStatus("submitting");
     const payload = {
       ...formData,
@@ -613,7 +797,8 @@ function BookingSection() {
       await sendBookingEmail(payload);
       await sendBookingTextAlert(payload);
       setFormStatus("success");
-    } catch {
+    } catch (err) {
+      setErrorMsg(err.message || "Something went wrong. Please call us directly.");
       setFormStatus("error");
     }
   };
@@ -628,10 +813,10 @@ function BookingSection() {
         {/* Header */}
         <FadeIn>
           <div style={{ textAlign: "center", marginBottom: "48px" }}>
-            <p style={{ fontFamily: "'Oswald', sans-serif", fontSize: "12px", letterSpacing: "5px", color: C.rust, marginBottom: "10px", fontWeight: 500 }}>CHOOSE YOUR CHARTER</p>
+            <p style={{ fontFamily: "'Oswald', sans-serif", fontSize: "12px", letterSpacing: "5px", color: C.rust, marginBottom: "10px", fontWeight: 500 }}>NOW ACCEPTING BOOKINGS</p>
             <h2 style={{ fontFamily: "'Playfair Display', serif", fontSize: isMobile ? "32px" : "44px", fontWeight: 800, color: C.navy, margin: "0 0 12px", letterSpacing: "-0.03em" }}>Book a Trip</h2>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "15px", color: "#8b8378", maxWidth: "520px", margin: "0 auto", lineHeight: 1.6 }}>
-              Select a charter below, then complete the booking request form. Captain Brian will confirm availability and respond within 2 hours.
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "15px", color: "#8b8378", maxWidth: "520px", margin: "0 auto 8px", lineHeight: 1.6 }}>
+              Pick your charter, select a date on the calendar below, and send your request. Captain Brian responds within 2 hours.
             </p>
           </div>
         </FadeIn>
@@ -683,29 +868,63 @@ function BookingSection() {
           })}
         </div>
 
-        {/* Booking Form */}
+        {/* Step 2 — Availability Calendar */}
+        <FadeIn>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px", marginTop: "8px" }}>
+            <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: C.navy, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: `2px solid ${C.gold}` }}>
+              <span style={{ fontFamily: "'Oswald',sans-serif", fontSize: "14px", color: C.gold, fontWeight: 700 }}>2</span>
+            </div>
+            <div>
+              <h3 style={{ fontFamily: "'Playfair Display',serif", fontSize: "20px", fontWeight: 700, color: C.navy, margin: 0 }}>Check Availability &amp; Select Your Date</h3>
+              <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: "13px", color: "#8b8378", margin: "2px 0 0" }}>Green dot = available · Red = booked · Tap a date to select it</p>
+            </div>
+          </div>
+        </FadeIn>
+        <FadeIn delay={0.1}>
+          <div style={{ maxWidth: "520px", marginBottom: "52px" }}>
+            <AvailabilityCalendar onSelectDate={handleDateSelect} selectedDate={formData.date} />
+          </div>
+        </FadeIn>
+
+        {/* Step 3 — Booking Form */}
+        <FadeIn>
+          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "20px" }}>
+            <div style={{ width: "34px", height: "34px", borderRadius: "50%", background: C.navy, display: "flex", alignItems: "center", justifyContent: "center", flexShrink: 0, border: `2px solid ${C.gold}` }}>
+              <span style={{ fontFamily: "'Oswald',sans-serif", fontSize: "14px", color: C.gold, fontWeight: 700 }}>3</span>
+            </div>
+            <h3 style={{ fontFamily: "'Playfair Display',serif", fontSize: "20px", fontWeight: 700, color: C.navy, margin: 0 }}>Complete Your Booking Request</h3>
+          </div>
+        </FadeIn>
         <div ref={formRef} style={{ maxWidth: "720px", margin: "0 auto" }}>
           <FadeIn>
             <div style={{ background: "#fff", borderRadius: "20px", padding: isMobile ? "28px 20px" : "40px", border: `1px solid ${C.sand}40`, boxShadow: "0 6px 32px rgba(0,0,0,0.06)" }}>
-              {/* Form header */}
-              <div style={{ marginBottom: "28px", paddingBottom: "20px", borderBottom: `1px solid ${C.sand}40` }}>
-                <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "24px", fontWeight: 700, color: C.navy, margin: "0 0 6px" }}>Booking Request</h3>
-                <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "14px", color: "#8b8378", margin: 0 }}>
-                  {selectedTrip ? `Charter selected: ${BOOKING_TRIPS.find((t) => t.id === selectedTrip)?.title}` : "Select a charter above, then complete this form."}
-                </p>
-              </div>
+              {/* Selected summary */}
+              {(selectedTrip || formData.date) && (
+                <div style={{ marginBottom: "24px", padding: "14px 18px", borderRadius: "10px", background: `${C.navy}08`, border: `1px solid ${C.navy}15` }}>
+                  <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: "13px", color: C.navy, margin: 0, lineHeight: 1.6 }}>
+                    {selectedTrip && <span>Charter: <strong>{BOOKING_TRIPS.find((t) => t.id === selectedTrip)?.title}</strong>{"  "}</span>}
+                    {formData.date && <span>Date: <strong>{new Date(formData.date + "T12:00:00").toLocaleDateString("en-US", { weekday: "short", month: "long", day: "numeric", year: "numeric" })}</strong></span>}
+                  </p>
+                </div>
+              )}
 
               {formStatus === "success" ? (
                 <div style={{ textAlign: "center", padding: "40px 20px" }}>
-                  <div style={{ fontSize: "48px", marginBottom: "16px" }}>⚓</div>
-                  <h3 style={{ fontFamily: "'Playfair Display', serif", fontSize: "26px", color: C.navy, margin: "0 0 10px" }}>Request Received!</h3>
-                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "15px", color: "#6b655e", margin: "0 0 20px", lineHeight: 1.6 }}>
-                    Thank you, {formData.name}. Captain Brian has been notified and will respond within 2 hours to confirm your charter.
+                  <div style={{ fontSize: "52px", marginBottom: "16px" }}>⚓</div>
+                  <h3 style={{ fontFamily: "'Playfair Display',serif", fontSize: "26px", color: C.navy, margin: "0 0 10px" }}>Booking Request Sent!</h3>
+                  <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: "15px", color: "#6b655e", margin: "0 0 8px", lineHeight: 1.6 }}>
+                    Your email client has opened with all your booking details pre-filled to send to Captain Brian.<br />
+                    <strong>Hit Send in your email app</strong> — Brian will confirm within 2 hours.
                   </p>
-                  <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "14px", color: "#8b8378", margin: 0 }}>
-                    Questions? Call or text (571) 232-7040 or WhatsApp us anytime.
+                  <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: "14px", color: "#8b8378", margin: "0 0 24px" }}>
+                    Prefer to call or text? We're ready: <strong>(571) 232-7040</strong>
                   </p>
+                  <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
+                    <a href="tel:+15712327040" style={{ padding: "12px 22px", borderRadius: "8px", background: C.navy, color: C.cream, fontFamily: "'DM Sans',sans-serif", fontSize: "14px", fontWeight: 600, textDecoration: "none" }}>Call (571) 232-7040</a>
+                    <a href="https://wa.me/15712327040" target="_blank" rel="noopener noreferrer" style={{ padding: "12px 22px", borderRadius: "8px", background: "#25D366", color: "#fff", fontFamily: "'DM Sans',sans-serif", fontSize: "14px", fontWeight: 600, textDecoration: "none" }}>💬 WhatsApp</a>
+                  </div>
                 </div>
+
               ) : (
                 <form onSubmit={handleSubmit}>
                   {/* Row 1: Name + Email */}
@@ -750,8 +969,11 @@ function BookingSection() {
                   {/* Row 4: Date + Time */}
                   <div style={{ display: "grid", gridTemplateColumns: isMobile ? "1fr" : "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
                     <div>
-                      <label style={labelStyle}>Preferred Date *</label>
-                      <input required style={inputStyle} type="date" min={new Date().toISOString().split("T")[0]} value={formData.date} onChange={(e) => set("date", e.target.value)} />
+                      <label style={labelStyle}>
+                        Preferred Date *{" "}
+                        {formData.date && <span style={{ color: "#4CAF50", fontWeight: 400, fontSize: "12px" }}>✓ Selected from calendar</span>}
+                      </label>
+                      <input required style={{ ...inputStyle, borderColor: formData.date ? "#4CAF50" : `${C.sand}80` }} type="date" min={new Date().toISOString().split("T")[0]} value={formData.date} onChange={(e) => set("date", e.target.value)} />
                     </div>
                     <div>
                       <label style={labelStyle}>Preferred Start Time *</label>
@@ -792,9 +1014,14 @@ function BookingSection() {
                   </button>
 
                   {formStatus === "error" && (
-                    <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "14px", color: C.rust, textAlign: "center", margin: "12px 0 0", fontWeight: 600 }}>
-                      Something went wrong. Please call (571) 232-7040 or email KMCUSVI@gmail.com directly.
-                    </p>
+                    <div style={{ marginTop: "14px", padding: "14px 18px", borderRadius: "10px", background: `${C.rust}08`, border: `1px solid ${C.rust}25`, textAlign: "center" }}>
+                      <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: "14px", color: C.rust, margin: "0 0 8px", fontWeight: 600 }}>
+                        {errorMsg || "Something went wrong. Please try again."}
+                      </p>
+                      <p style={{ fontFamily: "'DM Sans',sans-serif", fontSize: "13px", color: "#8b8378", margin: 0 }}>
+                        Or reach us directly: <a href="tel:+15712327040" style={{ color: C.navy, fontWeight: 600 }}>(571) 232-7040</a> · <a href="https://wa.me/15712327040" style={{ color: "#25D366", fontWeight: 600 }}>WhatsApp</a>
+                      </p>
+                    </div>
                   )}
 
                   <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "12px", color: "#9b9590", textAlign: "center", margin: "12px 0 0", lineHeight: 1.5 }}>
@@ -850,7 +1077,7 @@ function PhotoGallerySection() {
                   <div style={{ width: "100%", height: "100%", background: photo.grad, display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", gap: "10px" }}>
                     <span style={{ fontSize: "32px" }}>{photo.icon}</span>
                     <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: C.sand, opacity: 0.7, textAlign: "center", padding: "0 16px" }}>{photo.caption}</span>
-                    <span style={{ fontFamily: "'Oswald', sans-serif", fontSize: "10px", letterSpacing: "2px", color: `${C.gold}60` }}>PHOTO COMING SOON</span>
+                    
                   </div>
                 ) : (
                   <img src={photo.src} alt={photo.caption} style={{ width: "100%", height: "100%", objectFit: "cover", display: "block", transition: "transform 0.3s" }} />
@@ -868,7 +1095,7 @@ function PhotoGallerySection() {
         <FadeIn delay={0.3}>
           <div style={{ textAlign: "center", marginTop: "28px" }}>
             <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: C.sand, opacity: 0.6, margin: "0 0 10px" }}>
-              Real charter photos coming soon — follow our adventures on Instagram
+              Follow us on Instagram for real charter photos from every trip — updated after every sail
             </p>
             <a href="https://www.instagram.com/KnottyMarineUSVI" target="_blank" rel="noopener noreferrer" style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "14px", color: C.gold, textDecoration: "none", fontWeight: 600 }}>
               📸 @KnottyMarineUSVI
@@ -1027,6 +1254,27 @@ export default function KnottyMarineSite() {
 
       <RatesStrip />
       <InclusionsStrip />
+
+      {/* ── 3 WAYS TO BOOK BAR ── */}
+      <div style={{ background: C.navy, padding: isMobile ? "20px 16px" : "18px 24px", borderBottom: `2px solid ${C.gold}30` }}>
+        <div style={{ maxWidth: "900px", margin: "0 auto" }}>
+          <p style={{ fontFamily: "'Oswald',sans-serif", fontSize: "11px", letterSpacing: "4px", color: C.gold, textAlign: "center", margin: "0 0 14px", fontWeight: 500 }}>3 WAYS TO BOOK YOUR CHARTER</p>
+          <div style={{ display: "flex", gap: "10px", justifyContent: "center", flexWrap: "wrap" }}>
+            <a href="#book-a-trip" style={{ flex: "1 1 160px", maxWidth: "220px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "14px 18px", borderRadius: "10px", background: C.gold, color: C.navy, fontFamily: "'DM Sans',sans-serif", fontSize: "14px", fontWeight: 700, textDecoration: "none", textAlign: "center" }}>
+              📋 Fill Out the Form
+            </a>
+            <a href="tel:+15712327040" style={{ flex: "1 1 160px", maxWidth: "220px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "14px 18px", borderRadius: "10px", background: `${C.cream}12`, color: C.cream, border: `1px solid ${C.cream}25`, fontFamily: "'DM Sans',sans-serif", fontSize: "14px", fontWeight: 600, textDecoration: "none", textAlign: "center" }}>
+              📞 Call (571) 232-7040
+            </a>
+            <a href="https://wa.me/15712327040" target="_blank" rel="noopener noreferrer" style={{ flex: "1 1 160px", maxWidth: "220px", display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", padding: "14px 18px", borderRadius: "10px", background: "#25D366", color: "#fff", fontFamily: "'DM Sans',sans-serif", fontSize: "14px", fontWeight: 600, textDecoration: "none", textAlign: "center" }}>
+              💬 Text / WhatsApp
+            </a>
+          </div>
+          <p style={{ textAlign: "center", fontFamily: "'DM Sans',sans-serif", fontSize: "12px", color: C.sand, margin: "12px 0 0", opacity: 0.65 }}>
+            Captain Brian responds within 2 hours  •  Military &amp; locals 10% off with code <strong style={{ color: C.gold }}>USMC10</strong>
+          </p>
+        </div>
+      </div>
 
       {/* Charters */}
       <section id="charters" style={{ padding: isMobile ? "60px 16px" : "80px 24px", background: `linear-gradient(180deg, ${C.warmWhite}, ${C.cream})` }}>
@@ -1420,11 +1668,11 @@ export default function KnottyMarineSite() {
               <a href="tel:+15712327040" style={{ display: "inline-flex", alignItems: "center", padding: isMobile ? "16px 24px" : "16px 32px", borderRadius: "10px", background: "transparent", color: C.cream, border: `1.5px solid ${C.cream}30`, fontFamily: "'DM Sans', sans-serif", fontSize: "16px", fontWeight: 500, textDecoration: "none" }}>Call Us Direct</a>
               <a href="https://wa.me/15712327040" target="_blank" rel="noopener noreferrer" style={{ display: "inline-flex", alignItems: "center", padding: isMobile ? "16px 24px" : "16px 32px", borderRadius: "10px", background: "#25D366", color: "#fff", fontFamily: "'DM Sans', sans-serif", fontSize: "16px", fontWeight: 600, textDecoration: "none" }}>💬 WhatsApp</a>
             </div>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: C.sand, fontStyle: "italic", margin: "0 0 8px", opacity: 0.7, textAlign: "center" }}>
-              Online booking coming soon — email or call to check availability and reserve your date.
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: C.sand, fontStyle: "italic", margin: "0 0 8px", opacity: 0.8, textAlign: "center" }}>
+              Use the form above or reach us directly — we respond within 2 hours, guaranteed.
             </p>
-            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: C.sand, fontStyle: "italic", margin: "0 0 28px", opacity: 0.8, textAlign: "center" }}>
-              Questions? We respond within 2 hours during charter season.
+            <p style={{ fontFamily: "'DM Sans', sans-serif", fontSize: "13px", color: C.gold, margin: "0 0 28px", opacity: 0.9, textAlign: "center", fontWeight: 600 }}>
+              Now booking Summer &amp; Fall 2026 — peak season fills fast.
             </p>
           </FadeIn>
           <FadeIn delay={0.35}>
